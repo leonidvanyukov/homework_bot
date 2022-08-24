@@ -113,7 +113,7 @@ def main():
     """Основная логика работы бота."""
     check_tokens()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = 1
+    current_timestamp = int(time.time())
     while True:
         try:
             response = get_api_answer(current_timestamp)
