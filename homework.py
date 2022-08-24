@@ -38,18 +38,18 @@ class Not200Error(Exception):
 
 
 class DictEmpty(Exception):
-    """Словарь в ответе от API пустой"""
+    """Словарь в ответе от API пустой."""
 
 
 def send_message(bot, message):
-    """Отправляем сообщение в Telegram"""
+    """Отправляем сообщение в Telegram."""
     bot.send_message(TELEGRAM_CHAT_ID, message)
     info_message = f'Сообщение со статусом "{message}" успешно отправлено'
     logger.info(info_message)
 
 
 def get_api_answer(current_timestamp):
-    """Получаем ответ от API Practicum и проверяем, что API доступно"""
+    """Получаем ответ от API Practicum и проверяем, что API доступно."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
@@ -61,20 +61,20 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """Проверяем ответ от API: все ли ключи приходят, известен ли нам статус"""
+    """Проверяем ответ от API: все ключи приходят, известен ли нам статус."""
     if response['homeworks'] is None:
         message = 'Нет ожидаемых ключей в ответе от Practicum'
         logger.error(message)
         raise DictEmpty(message)
     status = response['homeworks'][0].get('status')
     if status not in HOMEWORK_STATUSES:
-        message = f'Статус домашней работы неизвестен боту'
+        message = 'Статус домашней работы неизвестен боту'
         logger.error(message)
     return response.get('homeworks')
 
 
 def parse_status(homework):
-    """Проверяем статус работы и готовим сообщение об изменении статуса"""
+    """Проверяем статус работы и готовим сообщение об изменении статуса."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if homework_name is None:
@@ -88,7 +88,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """Проверяем, что все обязательные переменные окружения настроены"""
+    """Проверяем, что все обязательные переменные окружения настроены."""
     if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
         message = 'Все обязательные переменные окружения настроены'
         logger.info(message)
