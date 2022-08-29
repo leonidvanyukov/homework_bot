@@ -10,8 +10,8 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import (DictEmpty, Not200Error, NotList, RequestExceptionError,
-                        UndocumentedStatusError, TelegramError, MainError)
+from exceptions import (DictEmpty, MainError, Not200Error, NotList,
+                        RequestExceptionError, TelegramError)
 
 load_dotenv()
 logger = logging.getLogger(__name__)

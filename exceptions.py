@@ -10,10 +10,6 @@ class RequestExceptionError(Exception):
     """Ошибка при запросе к API."""
 
 
-class UndocumentedStatusError(Exception):
-    """Неизвестный статус домашней работы."""
-
-
 class NotList(Exception):
     """Ответ от API не содержит список."""
 
