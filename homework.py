@@ -11,7 +11,7 @@ import telegram
 from dotenv import load_dotenv
 
 from exceptions import (DictEmpty, Not200Error, NotList, RequestExceptionError,
-                        UndocumentedStatusError)
+                        UndocumentedStatusError, TelegramError, MainError)
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ def send_message(bot, message):
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except telegram.TelegramError as error:
         logger.critical(error)
+        raise TelegramError(error)
     info_message = f'Сообщение со статусом "{message}" успешно отправлено'
     logger.info(info_message)
 
@@ -81,26 +82,19 @@ def check_response(response):
         message = 'В ответе API представлены не списком'
         logger.error(message)
         raise NotList(message)
+    if homeworks_list:
+        homeworks_status = homeworks_list[0].get('status')
+        if homeworks_status not in HOMEWORK_STATUSES:
+            message = 'Неизвестный статус домашней работы'
+            raise UndocumentedStatusError(message)
     return homeworks_list
 
 
 def parse_status(homework):
     """Проверяем статус работы и готовим сообщение об изменении статуса."""
-    try:
-        homework_name = homework.get('homework_name')
-    except KeyError as error:
-        message = f'Ошибка доступа по ключу homework_name: {error}'
-        logger.error(message)
-    try:
-        homework_status = homework.get('status')
-    except KeyError as error:
-        message = f'Ошибка доступа по ключу status: {error}'
-        logger.error(message)
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
     verdict = HOMEWORK_STATUSES[homework_status]
-    if verdict is None:
-        message = 'Неизвестный статус домашки'
-        logger.error(message)
-        raise UndocumentedStatusError(message)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -147,13 +141,14 @@ def main():
                 logger.info(message)
             else:
                 message = 'Обновлений не было'
-                logger.debug(message)
+                logger.info(message)
             current_timestamp = int(time.time())
             time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
             time.sleep(RETRY_TIME)
+            raise MainError(message)
 
 
 if __name__ == '__main__':

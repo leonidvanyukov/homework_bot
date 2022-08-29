@@ -10,9 +10,17 @@ class RequestExceptionError(Exception):
     """Ошибка при запросе к API."""
 
 
-class UndocumentedStatusError(Exception):
+class UndocumentedStatusError(KeyError):
     """Неизвестный статус домашней работы."""
 
 
 class NotList(Exception):
     """Ответ от API не содержит список."""
+
+
+class TelegramError(Exception):
+    """Ошибка взаимодействия с Telegram."""
+
+
+class MainError(Exception):
+    """Ошибка в программе."""
