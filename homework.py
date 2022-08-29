@@ -91,10 +91,20 @@ def check_response(response):
 
 
 def parse_status(homework):
+
     """Проверяем статус работы и готовим сообщение об изменении статуса."""
     homework_name = homework.get('homework_name')
+    if homework_name is None:
+        message = 'Отсутствует ключ homework_name'
+        logger.error(message)
     homework_status = homework.get('status')
+    if homework_status is None:
+        message = 'Отсутствует ключ homework_status'
+        logger.error(message)
     verdict = HOMEWORK_STATUSES[homework_status]
+    if homework_status not in HOMEWORK_STATUSES:
+        message = 'Статус домашней работы отсутствует в списке'
+        logger.error(message)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -132,11 +142,11 @@ def main():
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            homework = check_response(response)
-            if homework and check_status != homework[0]['status']:
-                message = parse_status(homework[0])
+            homework_list = check_response(response)
+            if homework_list and check_status != homework_list[0]['status']:
+                message = parse_status(homework_list[0])
                 send_message(bot, message)
-                check_status = homework[0]['status']
+                check_status = homework_list[0]['status']
                 message = 'Проверка обновлений успешно завершена'
                 logger.info(message)
             else:
