@@ -73,24 +73,23 @@ def check_response(response):
         message = 'Нет ожидаемых ключей в ответе от Practicum'
         logger.error(message)
         raise DictEmpty(message)
-    status = response['homeworks'][0].get('status')
-    if status not in HOMEWORK_STATUSES:
-        message = 'Статус домашней работы неизвестен боту'
-        logger.error(message)
-        raise UndocumentedStatusError(message)
-    return response['homeworks'][0]
+    return response['homeworks']
 
 
 def parse_status(homework):
     """Проверяем статус работы и готовим сообщение об изменении статуса."""
-    homework_name = homework.get('homework_name')
-    homework_status = homework.get('status')
+    homework_name = homework[0].get('homework_name')
+    homework_status = homework[0].get('status')
     if homework_name is None:
         message = 'Значение "homework_name" пустое'
         logger.error(message)
         raise UndocumentedStatusError(message)
     if homework_status is None:
         message = 'Значение "status" пустое'
+        logger.error(message)
+        raise UndocumentedStatusError(message)
+    if homework_status not in HOMEWORK_STATUSES:
+        message = 'Статус домашней работы неизвестен боту'
         logger.error(message)
         raise UndocumentedStatusError(message)
     verdict = HOMEWORK_STATUSES[homework_status]
@@ -125,15 +124,15 @@ def main():
         exit()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
-    check_status = 'reviewing'
+    check_status = ''
     while True:
         try:
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
-            if homework and check_status != homework['status']:
+            if homework and check_status != homework[0]['status']:
                 message = parse_status(homework)
                 send_message(bot, message)
-                check_status = homework['status']
+                check_status = homework[0]['status']
                 message = 'Проверка обновлений успешно завершена'
                 logger.info(message)
             else:
