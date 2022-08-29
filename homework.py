@@ -1,14 +1,17 @@
+import json
 import logging
 import os
 import sys
 import time
-import json
 from http import HTTPStatus
 from logging import Formatter, StreamHandler
-from exceptions import Not200Error, DictEmpty, RequestExceptionError, UndocumentedStatusError, NotDict
+
 import requests
 import telegram
 from dotenv import load_dotenv
+
+from exceptions import (DictEmpty, Not200Error, NotDict, RequestExceptionError,
+                        UndocumentedStatusError)
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -25,7 +28,6 @@ TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-
 
 HOMEWORK_STATUSES = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -93,7 +95,7 @@ def parse_status(homework):
         logger.error(message)
         raise UndocumentedStatusError(message)
     verdict = HOMEWORK_STATUSES[homework_status]
-    return f'Изменился статус проверки работы "{ homework_name }". { verdict }'
+    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens():
@@ -104,16 +106,18 @@ def check_tokens():
         return True
     else:
         if not PRACTICUM_TOKEN:
-            message = 'Отсутствует обязательная переменная окружения:'\
-                      '"PRACTICUM_TOKEN" Программа принудительно остановлена.'
+            message = ('Отсутствует обязательная переменная окружения: '
+                       '"PRACTICUM_TOKEN" Программа принудительно '
+                       'остановлена.')
             logger.critical(message)
         if not TELEGRAM_TOKEN:
-            message = 'Отсутствует обязательная переменная окружения:'\
-                      '"TELEGRAM_TOKEN" Программа принудительно остановлена.'
+            message = ('Отсутствует обязательная переменная окружения: '
+                       '"TELEGRAM_TOKEN" Программа принудительно остановлена.')
             logger.critical(message)
         if not TELEGRAM_CHAT_ID:
-            message = 'Отсутствует обязательная переменная окружения:'\
-                      '"TELEGRAM_CHAT_ID" Программа принудительно остановлена.'
+            message = ('Отсутствует обязательная переменная окружения:' 
+                       '"TELEGRAM_CHAT_ID" Программа принудительно '
+                       'остановлена.')
             logger.critical(message)
         return False
 
