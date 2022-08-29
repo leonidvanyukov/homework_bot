@@ -75,13 +75,21 @@ def check_response(response):
         message = 'Нет ожидаемых ключей в ответе от Practicum'
         logger.error(message)
         raise DictEmpty(message)
-    return response['homeworks']
+    if not isinstance(response.get('homeworks'), list):
+        message = 'Ответ API не список'
+        logger.error(message)
+        raise NotDict(message)
+    if response['homeworks']:
+        correct_response = response['homeworks'][0]
+    else:
+        correct_response = {}
+    return correct_response
 
 
 def parse_status(homework):
     """Проверяем статус работы и готовим сообщение об изменении статуса."""
-    homework_name = homework[0].get('homework_name')
-    homework_status = homework[0].get('status')
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
     if homework_name is None:
         message = 'Значение "homework_name" пустое'
         logger.error(message)
@@ -133,10 +141,10 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
-            if homework and check_status != homework[0]['status']:
+            if homework and check_status != homework['status']:
                 message = parse_status(homework)
                 send_message(bot, message)
-                check_status = homework[0]['status']
+                check_status = homework['status']
                 message = 'Проверка обновлений успешно завершена'
                 logger.info(message)
             else:
