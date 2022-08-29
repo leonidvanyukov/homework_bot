@@ -14,5 +14,5 @@ class UndocumentedStatusError(Exception):
     """Неизвестный статус домашней работы."""
 
 
-class NotDict(Exception):
-    """Ответ от API не содержит словарь."""
+class NotList(Exception):
+    """Ответ от API не содержит список."""

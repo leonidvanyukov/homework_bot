@@ -10,7 +10,7 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import (DictEmpty, Not200Error, NotDict, RequestExceptionError,
+from exceptions import (DictEmpty, Not200Error, NotList, RequestExceptionError,
                         UndocumentedStatusError)
 
 load_dotenv()
@@ -67,42 +67,40 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяем ответ от API: все ключи приходят, известен ли нам статус."""
-    if not isinstance(response, dict):
-        message = 'Ответ API не словарь'
-        logger.error(message)
-        raise NotDict(message)
-    if response.get('homeworks') is None:
-        message = 'Нет ожидаемых ключей в ответе от Practicum'
+    try:
+        homeworks_list = response['homeworks']
+    except KeyError as error:
+        message = f'Ошибка доступа по ключу homeworks: {error}'
         logger.error(message)
         raise DictEmpty(message)
-    if not isinstance(response.get('homeworks'), list):
-        message = 'Ответ API не список'
+    if homeworks_list is None:
+        message = 'В ответе API нет словаря'
         logger.error(message)
-        raise NotDict(message)
-    if response['homeworks']:
-        correct_response = response['homeworks'][0]
-    else:
-        correct_response = {}
-    return correct_response
+        raise DictEmpty(message)
+    if not isinstance(homeworks_list, list):
+        message = 'В ответе API представлены не списком'
+        logger.error(message)
+        raise NotList(message)
+    return homeworks_list
 
 
 def parse_status(homework):
     """Проверяем статус работы и готовим сообщение об изменении статуса."""
-    homework_name = homework.get('homework_name')
-    homework_status = homework.get('status')
-    if homework_name is None:
-        message = 'Значение "homework_name" пустое'
+    try:
+        homework_name = homework.get('homework_name')
+    except KeyError as error:
+        message = f'Ошибка доступа по ключу homework_name: {error}'
         logger.error(message)
-        raise UndocumentedStatusError(message)
-    if homework_status is None:
-        message = 'Значение "status" пустое'
+    try:
+        homework_status = homework.get('status')
+    except KeyError as error:
+        message = f'Ошибка доступа по ключу status: {error}'
         logger.error(message)
-        raise UndocumentedStatusError(message)
-    if homework_status not in HOMEWORK_STATUSES:
-        message = 'Статус домашней работы неизвестен боту'
-        logger.error(message)
-        raise UndocumentedStatusError(message)
     verdict = HOMEWORK_STATUSES[homework_status]
+    if verdict is None:
+        message = 'Неизвестный статус домашки'
+        logger.error(message)
+        raise UndocumentedStatusError(message)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -141,10 +139,10 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
-            if homework and check_status != homework['status']:
-                message = parse_status(homework)
+            if homework and check_status != homework[0]['status']:
+                message = parse_status(homework[0])
                 send_message(bot, message)
-                check_status = homework['status']
+                check_status = homework[0]['status']
                 message = 'Проверка обновлений успешно завершена'
                 logger.info(message)
             else:
