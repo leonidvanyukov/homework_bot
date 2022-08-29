@@ -115,7 +115,7 @@ def check_tokens():
                        '"TELEGRAM_TOKEN" Программа принудительно остановлена.')
             logger.critical(message)
         if not TELEGRAM_CHAT_ID:
-            message = ('Отсутствует обязательная переменная окружения:' 
+            message = ('Отсутствует обязательная переменная окружения: '
                        '"TELEGRAM_CHAT_ID" Программа принудительно '
                        'остановлена.')
             logger.critical(message)
