@@ -2,9 +2,10 @@ import logging
 import os
 import sys
 import time
+import json
 from http import HTTPStatus
 from logging import Formatter, StreamHandler
-
+from exceptions import Not200Error, DictEmpty, RequestExceptionError, UndocumentedStatusError, NotDict
 import requests
 import telegram
 from dotenv import load_dotenv
@@ -33,17 +34,12 @@ HOMEWORK_STATUSES = {
 }
 
 
-class Not200Error(Exception):
-    """Ответ сервера не равен 200."""
-
-
-class DictEmpty(Exception):
-    """Словарь в ответе от API пустой."""
-
-
 def send_message(bot, message):
     """Отправляем сообщение в Telegram."""
-    bot.send_message(TELEGRAM_CHAT_ID, message)
+    try:
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+    except telegram.TelegramError as error:
+        logger.critical(error)
     info_message = f'Сообщение со статусом "{message}" успешно отправлено'
     logger.info(info_message)
 
@@ -52,17 +48,28 @@ def get_api_answer(current_timestamp):
     """Получаем ответ от API Practicum и проверяем, что API доступно."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
-    response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    if response.status_code != HTTPStatus.OK:
-        message = 'Что-то не так с API Practicum (ответ сервера не 200)'
-        logger.error(message)
-        raise Not200Error(message)
-    return response.json()
+    try:
+        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        if response.status_code != HTTPStatus.OK:
+            message = 'Что-то не так с API Practicum (ответ сервера не 200)'
+            logger.error(message)
+            raise Not200Error(message)
+        return response.json()
+    except requests.exceptions.RequestException as error:
+        logger.critical(error)
+        raise RequestExceptionError(error)
+    except json.decoder.JSONDecodeError as error:
+        logger.error(error)
+        raise json.JSONDecodeError(error)
 
 
 def check_response(response):
     """Проверяем ответ от API: все ключи приходят, известен ли нам статус."""
-    if response['homeworks'] is None:
+    if not isinstance(response, dict):
+        message = 'Ответ API не словарь'
+        logger.error(message)
+        raise NotDict(message)
+    if response.get('homeworks') is None:
         message = 'Нет ожидаемых ключей в ответе от Practicum'
         logger.error(message)
         raise DictEmpty(message)
@@ -70,7 +77,8 @@ def check_response(response):
     if status not in HOMEWORK_STATUSES:
         message = 'Статус домашней работы неизвестен боту'
         logger.error(message)
-    return response.get('homeworks')
+        raise UndocumentedStatusError(message)
+    return response['homeworks'][0]
 
 
 def parse_status(homework):
@@ -80,9 +88,11 @@ def parse_status(homework):
     if homework_name is None:
         message = 'Значение "homework_name" пустое'
         logger.error(message)
+        raise UndocumentedStatusError(message)
     if homework_status is None:
         message = 'Значение "status" пустое'
         logger.error(message)
+        raise UndocumentedStatusError(message)
     verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{ homework_name }". { verdict }'
 
@@ -111,29 +121,30 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
+    if not check_tokens():
+        exit()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
+    check_status = 'reviewing'
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            if len(response['homeworks']) > 0:
-                homework = check_response(response)
+            homework = check_response(response)
+            if homework and check_status != homework['status']:
                 message = parse_status(homework)
                 send_message(bot, message)
+                check_status = homework['status']
+                message = 'Проверка обновлений успешно завершена'
+                logger.info(message)
             else:
                 message = 'Обновлений не было'
                 logger.debug(message)
             current_timestamp = int(time.time())
             time.sleep(RETRY_TIME)
-
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
             time.sleep(RETRY_TIME)
-        else:
-            message = 'Проверка обновлений успешно завершена'
-            logger.info(message)
 
 
 if __name__ == '__main__':
