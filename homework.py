@@ -91,7 +91,6 @@ def check_response(response):
 
 
 def parse_status(homework):
-
     """Проверяем статус работы и готовим сообщение об изменении статуса."""
     homework_name = homework.get('homework_name')
     if homework_name is None:
