@@ -86,7 +86,7 @@ def check_response(response):
         homeworks_status = homeworks_list[0].get('status')
         if homeworks_status not in HOMEWORK_STATUSES:
             message = 'Неизвестный статус домашней работы'
-            raise UndocumentedStatusError(message)
+            logger.error(message)
     return homeworks_list
 
 

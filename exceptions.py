@@ -10,7 +10,7 @@ class RequestExceptionError(Exception):
     """Ошибка при запросе к API."""
 
 
-class UndocumentedStatusError(KeyError):
+class UndocumentedStatusError(Exception):
     """Неизвестный статус домашней работы."""
 
 
