@@ -11,7 +11,7 @@ import telegram
 from dotenv import load_dotenv
 
 from exceptions import (DictEmpty, MainError, Not200Error, NotList,
-                        RequestExceptionError, TelegramError)
+                        RequestExceptionError, TelegramError, ApiKeyError)
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -75,11 +75,11 @@ def check_response(response):
         logger.error(message)
         raise DictEmpty(message)
     if homeworks_list is None:
-        message = 'В ответе API нет словаря'
+        message = 'В ответе API нет домашних работ'
         logger.error(message)
         raise DictEmpty(message)
     if not isinstance(homeworks_list, list):
-        message = 'В ответе API представлены не списком'
+        message = 'Ответ API представлен не списком'
         logger.error(message)
         raise NotList(message)
     if homeworks_list:
@@ -92,18 +92,21 @@ def check_response(response):
 
 def parse_status(homework):
     """Проверяем статус работы и готовим сообщение об изменении статуса."""
-    homework_name = homework.get('homework_name')
-    if homework_name is None:
-        message = 'Отсутствует ключ homework_name'
+    if 'homework_name' not in homework:
+        message = 'В ответе API отсутствует ключ homework_name'
         logger.error(message)
-    homework_status = homework.get('status')
-    if homework_status is None:
-        message = 'Отсутствует ключ homework_status'
+        raise ApiKeyError(message)
+    if 'status' not in homework:
+        message = 'В ответе API отсутствует ключ status'
         logger.error(message)
-    verdict = HOMEWORK_STATUSES[homework_status]
+        raise ApiKeyError(message)
+    homework_name = homework['homework_name']
+    homework_status = homework['status']
     if homework_status not in HOMEWORK_STATUSES:
-        message = 'Статус домашней работы отсутствует в списке'
+        message = f'Статус работы отсутствует в списке: {homework_status} '
         logger.error(message)
+        raise ApiKeyError(message)
+    verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 

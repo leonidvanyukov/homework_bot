@@ -20,3 +20,7 @@ class TelegramError(Exception):
 
 class MainError(Exception):
     """Ошибка в программе."""
+
+
+class ApiKeyError(KeyError):
+    """Отсутствует ключ в ответе от API."""
